@@ -1,0 +1,115 @@
+<div class="reviews-block">
+  <h3>Product Reviews</h3>
+
+  <div id="reviews-list">Loading reviews...</div>
+  <div id="reviews-actions" style="margin-top: 16px;"></div>
+
+  <hr style="margin: 24px 0;">
+
+  <form method="post" action="/apps/reviews">
+    <input type="hidden" name="productId" value="{{ product.id }}">
+    <input type="hidden" name="returnTo" value="{{ shop.url }}{{ product.url }}">
+
+    <div style="margin-bottom: 12px;">
+      <label for="review-name">Name</label><br>
+      <input id="review-name" type="text" name="name" required>
+    </div>
+
+    <div style="margin-bottom: 12px;">
+      <label for="review-rating">Rating</label><br>
+      <select id="review-rating" name="rating">
+        <option value="5">5 ★</option>
+        <option value="4">4 ★</option>
+        <option value="3">3 ★</option>
+        <option value="2">2 ★</option>
+        <option value="1">1 ★</option>
+      </select>
+    </div>
+
+    <div style="margin-bottom: 12px;">
+      <label for="review-text">Review</label><br>
+      <textarea id="review-text" name="text" required></textarea>
+    </div>
+
+    <button type="submit">Submit review</button>
+  </form>
+</div>
+
+<script>
+  (async function () {
+    const productId = "{{ product.id }}";
+    const list = document.getElementById("reviews-list");
+    const actions = document.getElementById("reviews-actions");
+
+    try {
+      const url = `${window.location.origin}/apps/reviews?productId=${encodeURIComponent(productId)}`;
+
+      const response = await fetch(url, {
+        headers: {
+          "ngrok-skip-browser-warning": "true"
+        }
+      });
+
+      const raw = await response.text();
+
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch (e) {
+        list.innerHTML = "<p>Failed to load reviews.</p>";
+        return;
+      }
+
+      if (!response.ok || !data.ok) {
+        list.innerHTML = "<p>Failed to load reviews.</p>";
+        return;
+      }
+
+      if (!data.reviews || data.reviews.length === 0) {
+        list.innerHTML = "<p>No reviews yet.</p>";
+        return;
+      }
+
+      const reviews = data.reviews;
+      const firstFive = reviews.slice(0, 5);
+
+      list.innerHTML = firstFive.map((review) => `
+        <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #ddd;">
+          <strong>${review.name}</strong><br>
+          <span>${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</span>
+          <p>${review.text}</p>
+        </div>
+      `).join("");
+
+      if (reviews.length > 5) {
+        actions.innerHTML = `
+          <button type="button" id="view-all-reviews-btn">
+            View all reviews
+          </button>
+        `;
+
+        document.getElementById("view-all-reviews-btn").addEventListener("click", function () {
+          list.innerHTML = reviews.map((review) => `
+            <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #ddd;">
+              <strong>${review.name}</strong><br>
+              <span>${"★".repeat(review.rating)}${"☆".repeat(5 - review.rating)}</span>
+              <p>${review.text}</p>
+            </div>
+          `).join("");
+
+          actions.innerHTML = "";
+        });
+      }
+    } catch (error) {
+      list.innerHTML = "<p>Failed to load reviews.</p>";
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Reviews",
+  "target": "section",
+  "settings": []
+}
+{% endschema %}
