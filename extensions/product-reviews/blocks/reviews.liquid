@@ -200,36 +200,36 @@
 </script>
 
 <script>
-    const modal = document.getElementById('review-modal');
-    const openBtn = document.getElementById('open-review-modal');
-    const closeBtn = document.getElementById('close-review-modal');
+  const modal = document.getElementById('review-modal');
+  const openBtn = document.getElementById('open-review-modal');
+  const closeBtn = document.getElementById('close-review-modal');
 
-    const isLoggedIn = {% if customer %}true{% else %}false{% endif %};
-    const loginUrl = "{{ routes.storefront_login_url }}";
+  const isLoggedIn = {% if customer %}true{% else %}false{% endif %};
+  const loginUrl = "{{ routes.storefront_login_url }}";
 
 
-    console.log('isLoggedIn**************',isLoggedIn)
-    console.log('loginUrl**************',loginUrl)
+  console.log('isLoggedIn**************',isLoggedIn)
+  console.log('loginUrl**************',loginUrl)
 
-    openBtn.addEventListener("click", () => {
+  openBtn.addEventListener("click", () => {
 
-      // if (!isLoggedIn) {
-      //   window.location.href = loginUrl;
-      //   return;
-      // }
+    // if (!isLoggedIn) {
+    //   window.location.href = loginUrl;
+    //   return;
+    // }
 
-      modal.classList.add("active");
-    });
+    modal.classList.add("active");
+  });
 
-    closeBtn.addEventListener('click', () => {
+  closeBtn.addEventListener('click', () => {
+    modal.classList.remove('active');
+  });
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
       modal.classList.remove('active');
-    });
-
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.classList.remove('active');
-      }
-    });
+    }
+  });
 </script>
 
 <script>
@@ -381,6 +381,16 @@
 
   .review-stars .star-half {
     fill: url(#half-gradient);
+  }
+
+  .shopify-block.shopify-app-block[data-block-handle='reviews'] {
+    width: 100%;
+    max-width: none;
+    display: block;
+    box-sizing: border-box;
+    flex: 1 1 100%;
+    min-width: 0;
+    padding-inline: 32px;
   }
 
   .review-item {
