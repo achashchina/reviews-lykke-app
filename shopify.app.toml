@@ -2,7 +2,7 @@
 
 client_id = "0848f304d3b9d3909312cc5136bc5d72"
 name = "reviews-lykke-app"
-application_url = "https://reviews-lykke-app-production.up.railway.app"
+application_url = "https://lucid-embrace-production-b6e0.up.railway.app"
 embedded = true
 
 [build]
