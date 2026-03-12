@@ -16,13 +16,16 @@ type Review = {
   status: string;
 };
 
-async function syncProductReviewMetafields(
-  admin: any,
-  productId: string,
-) {
+async function syncProductReviewMetafields(admin: any, productId: string) {
+  if (!productId || !String(productId).trim()) {
+    throw new Error("syncProductReviewMetafields: productId is empty");
+  }
+
+  const normalizedProductId = String(productId).trim();
+
   const reviews = await prisma.review.findMany({
     where: {
-      productId,
+      productId: normalizedProductId,
       status: "approved",
     },
     select: {
@@ -36,7 +39,9 @@ async function syncProductReviewMetafields(
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount
       : 0;
 
-  const productGid = `gid://shopify/Product/${productId}`;
+  const productGid = `gid://shopify/Product/${normalizedProductId}`;
+
+  console.log("SYNC productGid:", productGid);
 
   const mutation = `#graphql
     mutation SetProductReviewMetafields($metafields: [MetafieldsSetInput!]!) {
@@ -145,42 +150,39 @@ export async function action({ request }: ActionFunctionArgs) {
   if (actionType === "approve") {
     const id = String(formData.get("id") || "");
 
-    await prisma.review.update({
+    const updatedReview =  await prisma.review.update({
       where: { id },
       data: { status: "approved" },
     });
 
-    await syncProductReviewMetafields(admin, productId);
+    await syncProductReviewMetafields(admin, updatedReview.productId);
     return Response.json({ ok: true });
   }
 
   if (actionType === "reject") {
     const id = String(formData.get("id") || "");
 
-    await prisma.review.update({
+    const updatedReview = await prisma.review.update({
       where: { id },
       data: { status: "rejected" },
     });
 
-    await syncProductReviewMetafields(admin, productId);
+    await syncProductReviewMetafields(admin, updatedReview.productId);
 
     return Response.json({ ok: true });
   }
 
   if (actionType === "create") {
-    const productId = String(formData.get("productId") || "");
-    const name = String(formData.get("name") || "");
+    const productId = String(formData.get("productId") || "").trim();
+    const name = String(formData.get("name") || "").trim();
     const rating = Number(formData.get("rating") || 5);
-    const text = String(formData.get("text") || "");
-
+    const text = String(formData.get("text") || "").trim();
+  
     if (!productId || !name || !text || rating < 1 || rating > 5) {
-      return Response.json(
-        { ok: false, error: "Invalid data" },
-        { status: 400 },
-      );
+      return Response.json({ ok: false, error: "Invalid data" }, { status: 400 });
     }
-
-    await prisma.review.create({
+  
+    const createdReview = await prisma.review.create({
       data: {
         productId,
         name,
@@ -189,10 +191,10 @@ export async function action({ request }: ActionFunctionArgs) {
         status: "approved",
       },
     });
-
-    await syncProductReviewMetafields(admin, productId);
-
-    return Response.json({ ok: true });
+  
+    await syncProductReviewMetafields(admin, createdReview.productId);
+  
+    return Response.json({ ok: true, success: true });
   }
 
   return Response.json({ ok: false, error: "Unknown action" }, { status: 400 });
