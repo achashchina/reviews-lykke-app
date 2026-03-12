@@ -16,6 +16,75 @@ type Review = {
   status: string;
 };
 
+async function syncProductReviewMetafields(
+  admin: any,
+  productId: string,
+) {
+  const reviews = await prisma.review.findMany({
+    where: {
+      productId,
+      status: "approved",
+    },
+    select: {
+      rating: true,
+    },
+  });
+
+  const reviewsCount = reviews.length;
+  const averageRating =
+    reviewsCount > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewsCount
+      : 0;
+
+  const productGid = `gid://shopify/Product/${productId}`;
+
+  const mutation = `#graphql
+    mutation SetProductReviewMetafields($metafields: [MetafieldsSetInput!]!) {
+      metafieldsSet(metafields: $metafields) {
+        metafields {
+          id
+          namespace
+          key
+          value
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const response = await admin.graphql(mutation, {
+    variables: {
+      metafields: [
+        {
+          ownerId: productGid,
+          namespace: "custom",
+          key: "average_rating",
+          type: "number_decimal",
+          value: averageRating.toFixed(1),
+        },
+        {
+          ownerId: productGid,
+          namespace: "custom",
+          key: "reviews_count",
+          type: "number_integer",
+          value: String(reviewsCount),
+        },
+      ],
+    },
+  });
+
+  const result = await response.json();
+
+  if (result.data?.metafieldsSet?.userErrors?.length) {
+    throw new Error(
+      JSON.stringify(result.data.metafieldsSet.userErrors, null, 2),
+    );
+  }
+}
+
 export async function loader({ request }: ActionFunctionArgs) {
   const { admin } = await authenticate.admin(request);
 
@@ -66,9 +135,12 @@ export async function loader({ request }: ActionFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
+    const { admin } = await authenticate.admin(request);
+
   const formData = await request.formData();
 
   const actionType = String(formData.get("action") || "");
+  const productId = String(formData.get("productId") || "");
 
   if (actionType === "approve") {
     const id = String(formData.get("id") || "");
@@ -78,6 +150,7 @@ export async function action({ request }: ActionFunctionArgs) {
       data: { status: "approved" },
     });
 
+    await syncProductReviewMetafields(admin, productId);
     return Response.json({ ok: true });
   }
 
@@ -88,6 +161,8 @@ export async function action({ request }: ActionFunctionArgs) {
       where: { id },
       data: { status: "rejected" },
     });
+
+    await syncProductReviewMetafields(admin, productId);
 
     return Response.json({ ok: true });
   }
@@ -114,6 +189,8 @@ export async function action({ request }: ActionFunctionArgs) {
         status: "approved",
       },
     });
+
+    await syncProductReviewMetafields(admin, productId);
 
     return Response.json({ ok: true });
   }

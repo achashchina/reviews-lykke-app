@@ -68,18 +68,37 @@
     const half = avg % 1 >= 0.5 ? 1 : 0;
     const empty = 5 - full - half;
 
-    const star = (className) => `
-    <svg viewBox="0 0 20 20" class="${className}">
-        <path d="M10 1.5l2.6 5.4 6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L1.4 7.8l6-.9L10 1.5z"/>
+    const fullStar = `
+    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+      <path fill="#FF9800" d="M10 1.5l2.6 5.4 6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L1.4 7.8l6-.9L10 1.5z"/>
     </svg>
-    `;
+  `;
+
+    const halfStar = `
+    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+      <defs>
+        <linearGradient id="half-gradient-star" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="50%" stop-color="#FF9800"></stop>
+          <stop offset="50%" stop-color="#ddd"></stop>
+        </linearGradient>
+      </defs>
+      <path fill="url(#half-gradient-star)" d="M10 1.5l2.6 5.4 6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L1.4 7.8l6-.9L10 1.5z"/>
+    </svg>
+  `;
+
+    const emptyStar = `
+    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+      <path fill="#ddd" d="M10 1.5l2.6 5.4 6 .9-4.3 4.2 1 6-5.3-2.8-5.3 2.8 1-6L1.4 7.8l6-.9L10 1.5z"/>
+    </svg>
+  `;
 
     return `
-        ${star('star-full').repeat(full)}
-        ${half ? star('star-half') : ''}
-        ${star('star-empty').repeat(empty)}
-    `;
+    ${fullStar.repeat(full)}
+    ${half ? halfStar : ''}
+    ${emptyStar.repeat(empty)}
+  `;
   }
+
   (async function () {
     const productId = '{{ product.id }}';
     const list = document.getElementById('reviews-list');
