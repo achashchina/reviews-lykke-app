@@ -4,7 +4,7 @@
     <button id="open-review-modal">Write a review</button>
   </div>
 
-  <div id="reviews-summary-section" style="padding: 30px; text-align: center; background-color:#f7f6f2;"></div>
+  <div id="reviews-summary-section" style="padding: 16px; text-align: center; background-color:#f7f6f2;"></div>
 
   <div id="review-modal" class="review-modal">
     <div class="review-modal-content">
@@ -63,6 +63,16 @@
 </div>
 
 <script>
+  function formatDate(dateString) {
+    const d = new Date(dateString);
+
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+
+    return `${day}.${month}.${year}`;
+  }
+
   function renderStars(avg) {
     const full = Math.floor(avg);
     const half = avg % 1 >= 0.5 ? 1 : 0;
@@ -164,26 +174,18 @@
       list.innerHTML = firstFive
         .map(
           (review) => `
-        <div class="review-item">
-            <div
-            style="
-                display:flex;
-                flex-direction:column;
-                gap:8px;
-                min-width:0;
-            "
-            >
-            <strong style="line-height:1.4;">${review.name}</strong>
-            <div class="review-stars">
-                ${renderStars(review.rating)}
+       <div class="review-item">
+          <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+            <div style="display: flex; gap: 8px;">
+              <strong style="line-height: 1.4">${review.name}</strong>
+              <div class="review-stars">${renderStars(review.rating)}</div>
             </div>
-            </div>
+            <span class="review-date">${formatDate(review.createdAt)}</span>
+          </div>
 
-            <div style="min-width:0;">
-            <p style="margin:0; line-height:1.6;">
-                ${review.text}
-            </p>
-            </div>
+          <div style="min-width: 0">
+            <p style="margin: 0; line-height: 1.6"> ${review.text} </p>
+          </div>
         </div>
         `
         )
@@ -200,11 +202,19 @@
           list.innerHTML = reviews
             .map(
               (review) => `
-            <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #ddd;">
-              <strong>${review.name}</strong><br>
-              <span>${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}</span>
-              <p>${review.text}</p>
-            </div>
+                <div class="review-item">
+                  <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+                    <div style="display: flex; gap: 8px;">
+                      <strong style="line-height: 1.4">${review.name}</strong>
+                      <div class="review-stars">${renderStars(review.rating)}</div>
+                    </div>
+                    <span class="review-date">${formatDate(review.createdAt)}</span>
+                  </div>
+
+                  <div style="min-width: 0">
+                    <p style="margin: 0; line-height: 1.6"> ${review.text} </p>
+                  </div>
+                </div>
           `
             )
             .join('');
@@ -340,7 +350,7 @@
   .review-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    /* background: rgba(0, 0, 0, 0.45); */
     display: none;
     align-items: center;
     justify-content: center;
@@ -358,6 +368,7 @@
     max-width: 480px;
     border-radius: 8px;
     position: relative;
+    box-shadow: 0px 0px 10px 0px rgba(0, 0, 0, 0.1);
   }
 
   .review-modal-close {
@@ -380,6 +391,13 @@
     width: 100%;
     padding: 8px;
   }
+
+  .review-date {
+    display: block;
+    font-size: 10px;
+    color: #949292;
+  }
+
   .review-stars {
     display: inline-flex;
     align-items: center;
