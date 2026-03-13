@@ -1,8 +1,7 @@
-import { Form, useLoaderData } from "react-router";
+import { Form, useActionData, useFetcher, useLoaderData } from "react-router";
 import { useState } from "react";
 import prisma from "../db.server";
 import type { ActionFunctionArgs } from "react-router";
-import { useActionData } from "react-router";
 import { useEffect } from "react";
 
 import { authenticate } from "../shopify.server";
@@ -90,6 +89,15 @@ async function syncProductReviewMetafields(admin: any, productId: string) {
   }
 }
 
+async function createMany() {
+  const reviews =[] as any[];
+
+  await prisma.review.createMany({
+    data: reviews,
+    skipDuplicates: true,
+  });
+}
+
 export async function loader({ request }: ActionFunctionArgs) {
   const { admin } = await authenticate.admin(request);
 
@@ -121,7 +129,7 @@ export async function loader({ request }: ActionFunctionArgs) {
 
     const data = await response.json();
 
-    data.data.nodes.forEach((p:any) => {
+    data.data.nodes.forEach((p: any) => {
       if (!p) return;
 
       const productId = p.id.split("/").pop();
@@ -140,17 +148,21 @@ export async function loader({ request }: ActionFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-    const { admin } = await authenticate.admin(request);
+  const { admin } = await authenticate.admin(request);
 
   const formData = await request.formData();
 
   const actionType = String(formData.get("action") || "");
-  const productId = String(formData.get("productId") || "");
+
+  if (actionType === "createMany") {
+    await createMany();
+    return Response.json({ ok: true });
+  }
 
   if (actionType === "approve") {
     const id = String(formData.get("id") || "");
 
-    const updatedReview =  await prisma.review.update({
+    const updatedReview = await prisma.review.update({
       where: { id },
       data: { status: "approved" },
     });
@@ -177,11 +189,14 @@ export async function action({ request }: ActionFunctionArgs) {
     const name = String(formData.get("name") || "").trim();
     const rating = Number(formData.get("rating") || 5);
     const text = String(formData.get("text") || "").trim();
-  
+
     if (!productId || !name || !text || rating < 1 || rating > 5) {
-      return Response.json({ ok: false, error: "Invalid data" }, { status: 400 });
+      return Response.json(
+        { ok: false, error: "Invalid data" },
+        { status: 400 },
+      );
     }
-  
+
     const createdReview = await prisma.review.create({
       data: {
         productId,
@@ -191,9 +206,9 @@ export async function action({ request }: ActionFunctionArgs) {
         status: "approved",
       },
     });
-  
+
     await syncProductReviewMetafields(admin, createdReview.productId);
-  
+
     return Response.json({ ok: true, success: true });
   }
 
@@ -205,6 +220,7 @@ export default function ReviewsAdmin() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { productImages } = useLoaderData();
   const { shop } = useLoaderData();
+  const fetcher = useFetcher();
 
   const actionData = useActionData();
 
@@ -226,20 +242,44 @@ export default function ReviewsAdmin() {
       >
         <h1 style={{ margin: 0 }}>Reviews</h1>
 
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          style={{
-            border: "none",
-            background: "black",
-            color: "white",
-            padding: "10px 16px",
-            borderRadius: "8px",
-            cursor: "pointer",
-          }}
-        >
-          Add review
-        </button>
+        <div>
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            style={{
+              border: "none",
+              background: "black",
+              color: "white",
+              padding: "10px 16px",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Add review
+          </button>
+          <button
+            type="button"
+            onClick={() =>
+              fetcher.submit(
+                {
+                  action: "createMany",
+                  productId: '10211532439869',
+                },
+                { method: "post" },
+              )
+            }
+            style={{
+              border: "1px solid #d1d5db",
+              background: "white",
+              color: "black",
+              padding: "10px 16px",
+              borderRadius: "8px",
+              cursor: "pointer",
+            }}
+          >
+            Add many
+          </button>
+        </div>
       </div>
 
       <div
